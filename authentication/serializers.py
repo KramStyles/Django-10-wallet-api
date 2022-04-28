@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from authentication.models import User
+from authentication.models import User, Wallet
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -24,7 +24,15 @@ class RegisterSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
     def create(self, validated_data):
-        return User.objects.create(**validated_data)
+        new_user = User.objects.create(**validated_data)
+        new_user.set_password(validated_data['password'])
+        new_user.save()
+
+        cur_instance = new_user.main_currency
+
+        Wallet.objects.create(username_id=new_user, currency_id=cur_instance,
+                              name=f'{new_user.first_name} {cur_instance.name} Wallet').save()
+        return new_user
 
 
 class LoginSerializer(serializers.ModelSerializer):
